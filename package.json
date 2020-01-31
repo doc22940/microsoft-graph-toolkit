@@ -32,7 +32,7 @@
     "sass:watch": "gulp watchSass",
     "setVersion": "gulp setVersion",
     "setLicense": "gulp setLicense",
-    "build": "run-s prettier:check lint setVersion clean sass build:esm build:bundle",
+    "build": "run-s setVersion clean sass build:esm build:bundle",
     "build:esm": "tsc",
     "build:watch": "tsc --watch",
     "build:bundle": "npm run copy:loader && npm run copy:wc && npm run sass && rollup -c",
@@ -121,11 +121,6 @@
     "titleTemplate": "{classname} - {title}",
     "ancestorSeparator": " > ",
     "usePathForSuiteName": "true"
-  },
-  "husky": {
-    "hooks": {
-      "pre-commit": "npm run prettier:check"
-    }
   },
   "prettier": {
     "printWidth": 120,
