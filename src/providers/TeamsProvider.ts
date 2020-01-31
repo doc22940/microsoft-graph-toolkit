@@ -152,9 +152,9 @@ export class TeamsProvider extends MsalProvider {
     // and gets a false positive since teams opens a popup for the authentication.
     // in reality, we are doing a redirect authentication and need to act as if this is the
     // window initiating the authentication
-    if (window.opener) {
-      window.opener.msal = null;
-    }
+    // if (window.opener) {
+    //   window.opener.msal = null;
+    // }
 
     const url = new URL(window.location.href);
 
@@ -163,17 +163,22 @@ export class TeamsProvider extends MsalProvider {
 
     if (paramsString) {
       authParams = JSON.parse(paramsString);
+      console.log('getting authParams from storage');
     } else {
       authParams = {};
     }
 
     if (!authParams.clientId) {
+      console.log('getting authParams from url');
+
       authParams.clientId = url.searchParams.get('clientId');
       authParams.scopes = url.searchParams.get('scopes');
       authParams.loginHint = url.searchParams.get('loginHint');
 
       sessionStorage.setItem(this._sessionStorageParametersKey, JSON.stringify(authParams));
     }
+
+    console.log('authParams: ', authParams);
 
     if (!authParams.clientId) {
       teams.authentication.notifyFailure('no clientId provided');
@@ -184,6 +189,7 @@ export class TeamsProvider extends MsalProvider {
 
     const provider = new MsalProvider({
       clientId: authParams.clientId,
+      loginType: LoginType.Popup,
       options: {
         auth: {
           clientId: authParams.clientId,
@@ -196,14 +202,23 @@ export class TeamsProvider extends MsalProvider {
       scopes
     });
 
-    if ((UserAgentApplication.prototype as any).urlContainsHash(window.location.hash)) {
+    console.log('checking hash ', window.location.hash);
+
+    if ((provider as MsalProvider).userAgentApplication.isCallback(window.location.hash)) {
       // the page should redirect again
+      console.log('hash is callback');
+
       return;
     }
+
+    console.log('hash is not callback');
 
     const handleProviderState = async () => {
       // how do we handle when user can't sign in
       // change to promise and return status
+
+      console.log('provider state: ', provider.state);
+
       if (provider.state === ProviderState.SignedOut) {
         provider.login({
           loginHint: authParams.loginHint,
@@ -211,7 +226,7 @@ export class TeamsProvider extends MsalProvider {
         });
       } else if (provider.state === ProviderState.SignedIn) {
         try {
-          const accessToken = await provider.getAccessTokenForScopes(...provider.scopes);
+          const accessToken = await provider.getAccessToken(null);
           sessionStorage.removeItem(this._sessionStorageParametersKey);
           teams.authentication.notifySuccess(accessToken);
         } catch (e) {
@@ -279,6 +294,7 @@ export class TeamsProvider extends MsalProvider {
 
         teams.authentication.authenticate({
           failureCallback: reason => {
+            console.log(reason);
             this.setState(ProviderState.SignedOut);
             reject();
           },
@@ -314,17 +330,17 @@ export class TeamsProvider extends MsalProvider {
       accessTokenRequest.loginHint = this.teamsContext.loginHint;
     }
 
-    const currentParent = window.parent;
-    if (document.referrer.startsWith('https://teams.microsoft.com/')) {
-      (window as any).parent = window;
-    }
+    // const currentParent = window.parent;
+    // if (document.referrer.startsWith('https://teams.microsoft.com/')) {
+    //   (window as any).parent = window;
+    // }
 
     try {
-      const response = await this._userAgentApplication.acquireTokenSilent(accessTokenRequest);
-      (window as any).parent = currentParent;
+      const response = await this.userAgentApplication.acquireTokenSilent(accessTokenRequest);
+      // (window as any).parent = currentParent;
       return response.accessToken;
     } catch (e) {
-      (window as any).parent = currentParent;
+      // (window as any).parent = currentParent;
       if (this.requiresInteraction(e)) {
         // nothing we can do now until we can do incremental consent
         return null;

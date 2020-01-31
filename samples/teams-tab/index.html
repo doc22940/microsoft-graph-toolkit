@@ -1,10 +1,13 @@
 <html>
   <head>
     <script src="https://unpkg.com/@microsoft/teams-js/dist/MicrosoftTeams.min.js" crossorigin="anonymous"></script>
-    <script src="https://unpkg.com/@microsoft/mgt/dist/bundle/mgt-loader.js"></script>
+    <script src="./bundle/mgt-loader.js"></script>
   </head>
   <body>
-    <mgt-teams-provider client-id="<CLIENT-ID>" auth-popup-url="auth.html"></mgt-teams-provider>
+    <mgt-teams-provider
+      client-id="a974dfa0-9f57-49b9-95db-90f04ce2111a"
+      auth-popup-url="auth.html"
+    ></mgt-teams-provider>
     <mgt-login></mgt-login>
     <mgt-agenda group-by-day></mgt-agenda>
   </body>

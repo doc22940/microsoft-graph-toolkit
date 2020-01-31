@@ -85,7 +85,7 @@ export class MsalProvider extends IProvider {
    * @type {UserAgentApplication}
    * @memberof MsalProvider
    */
-  protected _userAgentApplication: UserAgentApplication;
+  public userAgentApplication: UserAgentApplication;
 
   /**
    * client-id authentication
@@ -115,10 +115,10 @@ export class MsalProvider extends IProvider {
    */
   public async trySilentSignIn() {
     try {
-      if (this._userAgentApplication.isCallback(window.location.hash)) {
+      if (this.userAgentApplication.isCallback(window.location.hash)) {
         return;
       }
-      if (this._userAgentApplication.getAccount() && (await this.getAccessToken(null))) {
+      if (this.userAgentApplication.getAccount() && (await this.getAccessToken(null))) {
         this.setState(ProviderState.SignedIn);
       } else {
         this.setState(ProviderState.SignedOut);
@@ -143,10 +143,14 @@ export class MsalProvider extends IProvider {
     };
 
     if (this._loginType === LoginType.Popup) {
-      const response = await this._userAgentApplication.loginPopup(loginRequest);
-      this.setState(response.account ? ProviderState.SignedIn : ProviderState.SignedOut);
+      try {
+        const response = await this.userAgentApplication.loginPopup(loginRequest);
+        this.setState(response.account ? ProviderState.SignedIn : ProviderState.SignedOut);
+      } catch (error) {
+        this.setState(ProviderState.SignedOut);
+      }
     } else {
-      this._userAgentApplication.loginRedirect(loginRequest);
+      this.userAgentApplication.loginRedirect(loginRequest);
     }
   }
 
@@ -157,7 +161,7 @@ export class MsalProvider extends IProvider {
    * @memberof MsalProvider
    */
   public async logout(): Promise<void> {
-    this._userAgentApplication.logout();
+    this.userAgentApplication.logout();
     this.setState(ProviderState.SignedOut);
   }
   /**
@@ -174,7 +178,7 @@ export class MsalProvider extends IProvider {
       scopes
     };
     try {
-      const response = await this._userAgentApplication.acquireTokenSilent(accessTokenRequest);
+      const response = await this.userAgentApplication.acquireTokenSilent(accessTokenRequest);
       return response.accessToken;
     } catch (e) {
       if (this.requiresInteraction(e)) {
@@ -182,13 +186,13 @@ export class MsalProvider extends IProvider {
           // check if the user denied the scope before
           if (!this.areScopesDenied(scopes)) {
             this.setRequestedScopes(scopes);
-            this._userAgentApplication.acquireTokenRedirect(accessTokenRequest);
+            this.userAgentApplication.acquireTokenRedirect(accessTokenRequest);
           } else {
             throw e;
           }
         } else {
           try {
-            const response = await this._userAgentApplication.acquireTokenPopup(accessTokenRequest);
+            const response = await this.userAgentApplication.acquireTokenPopup(accessTokenRequest);
             return response.accessToken;
           } catch (e) {
             throw e;
@@ -345,8 +349,8 @@ export class MsalProvider extends IProvider {
 
       this.clientId = config.clientId;
 
-      this._userAgentApplication = new UserAgentApplication(msalConfig);
-      this._userAgentApplication.handleRedirectCallback(tokenReceivedCallbackFunction, errorReceivedCallbackFunction);
+      this.userAgentApplication = new UserAgentApplication(msalConfig);
+      this.userAgentApplication.handleRedirectCallback(tokenReceivedCallbackFunction, errorReceivedCallbackFunction);
     } else {
       throw new Error('clientId must be provided');
     }
